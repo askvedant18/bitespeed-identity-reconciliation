@@ -1,133 +1,188 @@
-# Bitespeed Identity Reconciliation Service
+# 🔗 Bitespeed Identity Reconciliation Service
 
-This is a backend service built with Node.js, Express.js, TypeScript, and Prisma ORM to solve the Identity Reconciliation Task.
+A backend service that identifies and reconciles customer identities across multiple purchases using shared contact information (email & phone number).
 
-## Tech Stack
-- **Node.js**
-- **Express.js**
-- **TypeScript**
-- **Prisma ORM**
-- **PostgreSQL**
+Built with **Node.js**, **Express.js**, **TypeScript**, **PostgreSQL**, and **Prisma ORM**.
 
-## Project Structure
-```text
-src/
-  controllers/      # Request handlers
-  services/         # Business logic (Reconciliation logic)
-  routes/           # API route definitions
-  prisma/           # Prisma client instance
-  utils/            # Helper functions (if any)
-  index.ts          # Entry point
-prisma/
-  schema.prisma     # Prisma models and DB configuration
+---
+
+## 📌 Problem Statement
+
+FluxKart.com uses Bitespeed to track customer identities. Customers often use different email addresses or phone numbers when placing orders. This service links all such contacts and returns a unified identity with a primary contact and associated secondary contacts.
+
+---
+
+## 🚀 Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Node.js + Express.js | HTTP Server & Routing |
+| TypeScript | Type-safe development |
+| PostgreSQL | Relational Database |
+| Prisma ORM (v7) | Database access & migrations |
+| `@prisma/adapter-pg` | Driver adapter for PostgreSQL |
+| dotenv | Environment variable management |
+| CORS | Cross-origin request support |
+
+---
+
+## 📁 Project Structure
+
+```
+Task/
+├── prisma/
+│   ├── schema.prisma        # Prisma schema (Contact model)
+│   └── migrations/          # Auto-generated DB migrations
+├── src/
+│   ├── controllers/
+│   │   └── identifyController.ts   # Request handler
+│   ├── services/
+│   │   └── identifyService.ts      # Core reconciliation logic
+│   ├── routes/
+│   │   └── identifyRoutes.ts       # Express routes
+│   ├── prisma/
+│   │   └── client.ts               # Prisma client instance
+│   └── index.ts                    # App entry point
+├── .env                     # Environment variables (not committed)
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-## Setup Instructions
+---
 
-### 1. Prerequisites
-- Node.js (v18 or higher recommended)
-- PostgreSQL database instance
+## ⚙️ Local Setup & Installation
 
-### 2. Installation
-Clone the project and install dependencies:
+### Prerequisites
+- Node.js v18+
+- PostgreSQL database (local or hosted, e.g. Supabase, Neon, Railway)
+- npm
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/askvedant18/bitespeed-identity-reconciliation.git
+cd bitespeed-identity-reconciliation
+```
+
+### 2. Install dependencies
+
 ```bash
 npm install
 ```
 
-### 3. Database Configuration
-Create a `.env` file in the root directory and add your PostgreSQL connection string:
+### 3. Set up environment variables
+
+Create a `.env` file in the root directory:
+
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/database_name?schema=public"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 PORT=3000
 ```
 
-### 4. Running Migrations
-Use Prisma to create the database schema:
-```bash
-npm run prisma:migrate
-```
-This will create the **Contact** table in your PostgreSQL database.
+> Replace `USER`, `PASSWORD`, `HOST`, `PORT`, `DATABASE` with your actual PostgreSQL credentials.
 
-### 5. Running the Application
-To start the server in development mode:
+### 4. Run Prisma migrations (creates the `Contact` table)
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 5. Generate Prisma client
+
+```bash
+npx prisma generate
+```
+
+### 6. Start the development server
+
 ```bash
 npm run dev
 ```
-The server will be available at `http://localhost:3000`.
+
+Server will start at `http://localhost:3000`
 
 ---
 
-## API Testing (Postman)
+## 📬 API Reference
 
-### Endpoint: `POST /identify`
+### `POST /identify`
 
-**Request Body (JSON):**
+Identifies and reconciles a contact based on email and/or phone number.
+
+**Request Body:**
 ```json
 {
-  "email": "mcfly@hillvalley.net",
-  "phoneNumber": "123456"
+  "email": "user@example.com",
+  "phoneNumber": "9876543210"
 }
 ```
+> Note: At least one of `email` or `phoneNumber` must be provided.
 
-### Example Scenarios
-
-#### 1. New Contact (First Request)
-**Request:**
-```json
-{ "email": "lorraine@hillvalley.net", "phoneNumber": "123456" }
-```
 **Response:**
 ```json
 {
   "contact": {
     "primaryContactId": 1,
-    "emails": ["lorraine@hillvalley.net"],
-    "phoneNumbers": ["123456"],
-    "secondaryContactIds": []
-  }
-}
-```
-
-#### 2. Reconciliation (Secondary Information)
-**Request:**
-```json
-{ "email": "mcfly@hillvalley.net", "phoneNumber": "123456" }
-```
-**Response:**
-```json
-{
-  "contact": {
-    "primaryContactId": 1,
-    "emails": ["lorraine@hillvalley.net", "mcfly@hillvalley.net"],
-    "phoneNumbers": ["123456"],
-    "secondaryContactIds": [2]
-  }
-}
-```
-
-#### 3. Connecting Two Primaries
-**Request:**
-```json
-{ "email": "bob@example.com", "phoneNumber": "999999" } // Primary 1
-{ "email": "alice@example.com", "phoneNumber": "888888" } // Primary 2
-{ "email": "alice@example.com", "phoneNumber": "999999" } // Connects them!
-```
-**Response (Oldest remains primary):**
-```json
-{
-  "contact": {
-    "primaryContactId": 1,
-    "emails": ["bob@example.com", "alice@example.com"],
-    "phoneNumbers": ["999999", "888888"],
-    "secondaryContactIds": [2]
+    "emails": ["user@example.com", "other@example.com"],
+    "phoneNumbers": ["9876543210", "1234567890"],
+    "secondaryContactIds": [2, 3]
   }
 }
 ```
 
 ---
 
-## Key Features
-- **Oldest Primary Logic**: Guaranteed to identify the earliest primary contact as the root.
-- **Service Layer**: Clean separation of business logic from controllers.
-- **Type Safety**: Fully typed with TypeScript interfaces.
-- **Prisma Support**: Built-in migrations and type-safe DB access.
+## 🔄 Reconciliation Logic
+
+| Scenario | Behavior |
+|---|---|
+| No existing contact | Creates a new **primary** contact |
+| Existing contact found | Returns the existing contact cluster |
+| New info provided (new email/phone) | Creates a new **secondary** contact linked to the oldest primary |
+| Two separate primary contacts share info | The **older** one stays primary; the newer becomes **secondary** |
+
+---
+
+## 🧪 Testing the API
+
+You can test with **Postman**, **curl**, or any HTTP client:
+
+```bash
+curl -X POST http://localhost:3000/identify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "phoneNumber": "9999999999"}'
+```
+
+---
+
+## 📜 Database Schema
+
+```prisma
+model Contact {
+  id              Int            @id @default(autoincrement())
+  phoneNumber     String?
+  email           String?
+  linkedId        Int?
+  linkPrecedence  LinkPrecedence
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+}
+
+enum LinkPrecedence {
+  primary
+  secondary
+}
+```
+
+---
+
+## 📦 Available Scripts
+
+```bash
+npm run dev          # Start development server with nodemon
+npm run build        # Compile TypeScript to JavaScript
+npm run start        # Run compiled production build
+```
